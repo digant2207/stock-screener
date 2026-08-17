@@ -10,12 +10,16 @@ def parse_spreadsheet_id_and_gid(url):
     spreadsheet_id = None
     gid = "0"
     
-    # Extract Spreadsheet ID
+    # Check published web URL format: /d/e/2PACX-.../pub
+    pub_match = re.search(r'/d/e/([a-zA-Z0-9-_]+)', url)
+    if pub_match:
+        return f"e/{pub_match.group(1)}", gid
+        
+    # Standard format: /d/SPREADSHEET_ID
     match = re.search(r'/d/([a-zA-Z0-9-_]+)', url)
     if match:
         spreadsheet_id = match.group(1)
         
-    # Extract gid
     gid_match = re.search(r'[#&?]gid=([0-9]+)', url)
     if gid_match:
         gid = gid_match.group(1)
@@ -31,11 +35,9 @@ def format_ticker_symbol(raw_ticker):
     """
     ticker = str(raw_ticker).strip().upper()
     
-    # Remove headers or invalid entries
-    if not ticker or ticker in ['TICKER', 'SYMBOL', 'STOCKS', 'STOCK', 'CODE', 'COMPANY', 'NSE CODE', 'BSE CODE', 'NAME', 'SR NO', 'S.NO']:
+    if not ticker or ticker in ['TICKER', 'SYMBOL', 'STOCKS', 'STOCK', 'CODE', 'COMPANY', 'NSE CODE', 'BSE CODE', 'NAME', 'SR NO', 'S.NO', 'NAN', 'NONE']:
         return None
         
-    # Remove trailing .0 if pandas parsed integer as float string (e.g. "500325.0")
     if ticker.endswith('.0') and ticker[:-2].isdigit():
         ticker = ticker[:-2]
         
@@ -47,7 +49,6 @@ def format_ticker_symbol(raw_ticker):
         return f"{ticker}.BO"
         
     # Standard string ticker (e.g. RELIANCE -> RELIANCE.NS)
-    # Sanitize invalid symbols
     ticker = re.sub(r'[^A-Z0-9&\-]', '', ticker)
     if ticker:
         return f"{ticker}.NS"
@@ -57,46 +58,54 @@ def format_ticker_symbol(raw_ticker):
 def fetch_tickers_from_google_sheet(sheet_url, col_identifier="A"):
     """
     Downloads CSV from Google Sheet URL and extracts formatted stock tickers from the specified column.
-    `col_identifier` can be column letter ('A', 'B', etc.) or column index (0, 1) or header name.
     """
     spreadsheet_id, gid = parse_spreadsheet_id_and_gid(sheet_url)
     if not spreadsheet_id:
         raise ValueError("Invalid Google Sheet URL. Could not find Spreadsheet ID.")
         
-    # Construct export URL
-    export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid={gid}"
-    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
     
-    response = requests.get(export_url, headers=headers, timeout=15)
-    if response.status_code != 200:
-        # Fallback to gviz URL
-        export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&gid={gid}"
-        response = requests.get(export_url, headers=headers, timeout=15)
-        if response.status_code != 200:
-            raise ValueError(f"Failed to access Google Sheet (HTTP {response.status_code}). Ensure sheet permissions are set to 'Anyone with link can view'.")
+    # Try multiple Google Sheet CSV export endpoints
+    export_urls = [
+        f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid={gid}",
+        f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&gid={gid}",
+        f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/pub?output=csv&gid={gid}"
+    ]
+    
+    response = None
+    for url in export_urls:
+        try:
+            r = requests.get(url, headers=headers, timeout=12)
+            if r.status_code == 200 and len(r.text.strip()) > 0:
+                response = r
+                break
+        except Exception:
+            continue
             
-    # Read CSV
+    if not response or response.status_code != 200:
+        raise ValueError(
+            "Failed to access Google Sheet (Access Restricted). "
+            "Please open your Google Sheet -> Click 'Share' button -> Change General Access to 'Anyone with the link'."
+        )
+        
     df = pd.read_csv(io.StringIO(response.text), header=None)
     if df.empty:
         return []
         
-    # Determine column index
     col_idx = 0
     if str(col_identifier).isalpha() and len(str(col_identifier)) == 1:
         col_idx = ord(str(col_identifier).upper()) - ord('A')
     elif str(col_identifier).isdigit():
         col_idx = int(col_identifier)
     else:
-        # Check if first row contains matching header
         first_row = df.iloc[0].astype(str).str.strip().str.upper().tolist()
         if str(col_identifier).upper() in first_row:
             col_idx = first_row.index(str(col_identifier).upper())
             
     if col_idx >= len(df.columns):
-        col_idx = 0 # Default fallback to Column A
+        col_idx = 0
         
     raw_list = df.iloc[:, col_idx].dropna().tolist()
     
@@ -110,8 +119,3 @@ def fetch_tickers_from_google_sheet(sheet_url, col_identifier="A"):
             formatted_tickers.append(symbol)
             
     return formatted_tickers
-
-if __name__ == "__main__":
-    test_url = "https://docs.google.com/spreadsheets/d/1B__Wam6da-nD7ReSg2JlHwu5pH7xDHlkQkBjSzF9YdA/edit?gid=0#gid=0"
-    tickers = fetch_tickers_from_google_sheet(test_url, col_identifier="A")
-    print(f"Extracted {len(tickers)} tickers from test sheet. Sample:", tickers[:10])
