@@ -1,9 +1,8 @@
 import os
 import sys
 from sheets_importer import fetch_tickers_from_google_sheet
-from scanner import advanced_stock_scanner, export_results
+from scanner import advanced_stock_scanner, export_results, DEFAULT_STOCKS
 from mailer import send_breakout_email
-from app import DEFAULT_STOCKS
 
 def main():
     print("=" * 60)
