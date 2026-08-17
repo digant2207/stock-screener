@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAR + DMA Super Breakout Screener</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0b0e14;
+            --bg-secondary: #141923;
+            --bg-card: #1c2333;
+            --bg-card-hover: #242d42;
+            --border-color: #2b354a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent-green: #10b981;
+            --accent-green-glow: rgba(16, 185, 129, 0.25);
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --radius: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Top Navbar */
+        header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            font-size: 28px;
+        }
+
+        .brand h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1350px;
+            margin: 28px auto;
+            padding: 0 24px;
+        }
+
+        /* Card Section */
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-green);
+            border-bottom-color: var(--accent-green);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-main);
+        }
+
+        /* Form Inputs */
+        .input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"], textarea, select {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .input-url {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .input-col {
+            width: 120px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 90px;
+            resize: vertical;
+        }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-green);
+            color: #000;
+            border: none;
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        .btn-primary:hover {
+            background-color: #059669;
+            color: #fff;
+        }
+
+        .btn-blue {
+            background-color: var(--accent-blue);
+            color: #fff;
+            border: none;
+        }
+
+        .btn-blue:hover {
+            background-color: #2563eb;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .stat-value.green {
+            color: var(--accent-green);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 16px 0;
+            display: none;
+        }
+
+        .progress-bar-bg {
+            background-color: var(--bg-primary);
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Table */
+        .table-responsive {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--bg-card);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-nse {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .badge-bse {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .badge-breakout {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 900px;
+            padding: 24px;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            font-size: 24px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 420px;
+            margin-top: 16px;
+        }
+
+        .alert-box {
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .alert-error {
+            background-color: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-info {
+            background-color: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand">
+            <span class="brand-icon">📈</span>
+            <div>
+                <h1>Super Breakout Screener</h1>
+                <p>CAR (Cumulative Average) + 30, 50, 200 DMA Analysis</p>
+            </div>
+        </div>
+        <div class="status-badge" id="sourceStatus">Source: Nifty 200 List (<span id="tickerCount">{{ default_count }}</span> stocks)</div>
+    </header>
+
+    <div class="container">
+
+        <!-- Controls Card -->
+        <div class="card">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('nifty')">📜 Pre-loaded Nifty List</button>
+                <button class="tab-btn" onclick="switchTab('sheet')">📊 Google Sheet Import</button>
+                <button class="tab-btn" onclick="switchTab('paste')">✏️ Paste Stock Tickers</button>
+            </div>
+
+            <!-- Tab 1: Nifty -->
+            <div id="tab-nifty">
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 12px;">
+                    Ready to scan the pre-loaded 210 top liquid Indian stocks (NSE/BSE).
+                </p>
+            </div>
+
+            <!-- Tab 2: Sheet -->
+            <div id="tab-sheet" style="display: none;">
+                <div class="input-group">
+                    <input type="text" id="sheetUrl" class="input-url" placeholder="Paste Google Sheet URL (e.g. https://docs.google.com/spreadsheets/d/...)" value="https://docs.google.com/spreadsheets/d/1B__Wam6da-nD7ReSg2JlHwu5pH7xDHlkQkBjSzF9YdA/edit?gid=0#gid=0">
+                    <input type="text" id="sheetCol" class="input-col" placeholder="Column (A)" value="A">
+                    <button class="btn btn-blue" onclick="loadGoogleSheet()">Fetch Tickers</button>
+                </div>
+                <div class="alert-box alert-info" id="sheetInfo">
+                    💡 <strong>Tip:</strong> Ensure your Google Sheet permission is set to <em>"Anyone with the link can view"</em>.
+                </div>
+            </div>
+
+            <!-- Tab 3: Paste -->
+            <div id="tab-paste" style="display: none;">
+                <textarea id="pastedStocks" placeholder="Paste stock tickers or BSE codes (one per line or comma separated, e.g. RELIANCE, TCS, 500325, BEL.NS)"></textarea>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-blue" onclick="parsePastedStocks()">Load Pasted Tickers</button>
+                </div>
+            </div>
+
+            <div class="alert-box alert-error" id="errorBox"></div>
+
+            <!-- Action Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <button class="btn btn-primary" id="scanBtn" onclick="runScanner()">
+                    ⚡ Run Super Breakout Scanner
+                </button>
+
+                <div style="display: flex; gap: 10px;">
+                    <a href="/api/download/excel" class="btn" id="btnExcel" style="text-decoration: none; display: none;">📥 Download Excel (.xlsx)</a>
+                    <a href="/api/download/csv" class="btn" id="btnCsv" style="text-decoration: none; display: none;">📥 Download CSV</a>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="progressStatus">Downloading market data...</span>
+                    <span id="progressPct">0%</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Metrics Dashboard -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Stocks Scanned</div>
+                <div class="stat-value" id="statScanned">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Positive Breakouts Found</div>
+                <div class="stat-value green" id="statBreakouts">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg % Dist from 200 DMA</div>
+                <div class="stat-value" id="statAvgDist">0.0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Strategy Criteria</div>
+                <div class="stat-value" style="font-size: 14px; color: var(--text-muted); font-weight: 500;">
+                    CMP > 30/50/200 DMA + CAR Trend Positive
+                </div>
+            </div>
+        </div>
+
+        <!-- Breakout Table Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span>🟢 Positive Breakout Stocks</span>
+                    <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">(Sorted by 200 DMA % Distance)</span>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <input type="text" id="searchInput" placeholder="Search stock or exchange..." onkeyup="filterTable()">
+                    <select id="exchangeFilter" onchange="filterTable()">
+                        <option value="ALL">All Exchanges</option>
+                        <option value="NSE">NSE Only</option>
+                        <option value="BSE">BSE Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="breakoutTable">
+                    <thead>
+                        <tr>
+                            <th>Stock</th>
+                            <th>Exchange</th>
+                            <th>Date</th>
+                            <th>CMP (₹)</th>
+                            <th>30 DMA</th>
+                            <th>50 DMA</th>
+                            <th>200 DMA</th>
+                            <th>200 DMA Dist %</th>
+                            <th>CAR Status</th>
+                            <th>Action</th>
+                            <th>Chart</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                Click <strong>"Run Super Breakout Scanner"</strong> to analyze stocks.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Chart Modal -->
+    <div class="modal" id="chartModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeChartModal()">&times;</span>
+            <h3 id="modalStockTitle" style="font-size: 18px; margin-bottom: 4px;">Stock Chart</h3>
+            <p style="font-size: 12px; color: var(--text-muted);">Comparing Price vs 30 DMA, 50 DMA, 200 DMA & CAR Trendline</p>
+            <div class="chart-container">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTickers = [];
+        let breakoutData = [];
+        let myChart = null;
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tab-nifty').style.display = 'none';
+            document.getElementById('tab-sheet').style.display = 'none';
+            document.getElementById('tab-paste').style.display = 'none';
+
+            if (tabName === 'nifty') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-nifty').style.display = 'block';
+                currentTickers = []; // Uses backend default
+                document.getElementById('sourceStatus').innerText = "Source: Pre-loaded Nifty List";
+            } else if (tabName === 'sheet') {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-sheet').style.display = 'block';
+                document.getElementById('sheetInfo').style.display = 'block';
+            } else if (tabName === 'paste') {
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('tab-paste').style.display = 'block';
+            }
+        }
+
+        function showError(msg) {
+            const eb = document.getElementById('errorBox');
+            if (msg) {
+                eb.innerText = msg;
+                eb.style.display = 'block';
+            } else {
+                eb.style.display = 'none';
+            }
+        }
+
+        async function loadGoogleSheet() {
+            showError("");
+            const url = document.getElementById('sheetUrl').value.trim();
+            const col = document.getElementById('sheetCol').value.trim() || 'A';
+
+            if (!url) {
+                showError("Please enter a valid Google Sheet URL.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/load-sheet', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ sheet_url: url, column: col })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    currentTickers = data.tickers;
+                    document.getElementById('sourceStatus').innerText = `Source: Google Sheet (${data.count} tickers loaded)`;
+                    document.getElementById('tickerCount').innerText = data.count;
+                    alert(`✅ Loaded ${data.count} tickers from Google Sheet!\nSample: ${data.sample.slice(0,5).join(', ')}`);
+                } else {
+                    showError("⚠️ " + data.error);
+                }
+            } catch (err) {
+                showError("Failed to connect to backend: " + err.message);
+            }
+        }
+
+        async function parsePastedStocks() {
+            showError("");
+            const text = document.getElementById('pastedStocks').value.trim();
+            if (!text) {
+                showError("Please paste stock symbols in the text box.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/parse-pasted', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text: text })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    currentTickers = data.tickers;
+                    document.getElementById('sourceStatus').innerText = `Source: Custom Pasted List (${data.count} tickers loaded)`;
+                    alert(`✅ Formatted ${data.count} tickers!\nSample: ${data.sample.slice(0,5).join(', ')}`);
+                } else {
+                    showError(data.error);
+                }
+            } catch (err) {
+                showError("Error: " + err.message);
+            }
+        }
+
+        async function runScanner() {
+            showError("");
+            const scanBtn = document.getElementById('scanBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressStatus = document.getElementById('progressStatus');
+            const progressPct = document.getElementById('progressPct');
+
+            scanBtn.disabled = true;
+            scanBtn.innerText = "⏳ Scanning Stocks...";
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '20%';
+            progressStatus.innerText = "Fetching market data & computing DMAs / CAR...";
+            progressPct.innerText = "20%";
+
+            try {
+                const res = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ tickers: currentTickers, max_workers: 12 })
+                });
+                const data = await res.json();
+
+                progressBar.style.width = '100%';
+                progressPct.innerText = "100%";
+                progressStatus.innerText = "Scan complete!";
+
+                if (data.success) {
+                    breakoutData = data.results;
+                    renderTable(breakoutData);
+
+                    document.getElementById('statScanned').innerText = data.total_scanned;
+                    document.getElementById('statBreakouts').innerText = data.breakouts_found;
+
+                    if (breakoutData.length > 0) {
+                        const sumDist = breakoutData.reduce((acc, curr) => acc + curr['200 DMA Dist %'], 0);
+                        const avgDist = (sumDist / breakoutData.length).toFixed(2);
+                        document.getElementById('statAvgDist').innerText = `+${avgDist}%`;
+
+                        document.getElementById('btnExcel').style.display = 'inline-flex';
+                        document.getElementById('btnCsv').style.display = 'inline-flex';
+                    } else {
+                        document.getElementById('statAvgDist').innerText = "N/A";
+                    }
+                } else {
+                    showError(data.error);
+                }
+            } catch (err) {
+                showError("Scanner execution failed: " + err.message);
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerText = "⚡ Run Super Breakout Scanner";
+                setTimeout(() => { progressContainer.style.display = 'none'; }, 2000);
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                    No stocks met the positive breakout criteria today.
+                </td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                const exBadge = item.Exchange === 'BSE' ? 'badge-bse' : 'badge-nse';
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${item.Stock}</td>
+                    <td><span class="badge ${exBadge}">${item.Exchange}</span></td>
+                    <td style="color: var(--text-muted);">${item.Date}</td>
+                    <td class="mono" style="font-weight: 600;">₹${item.CMP}</td>
+                    <td class="mono">${item['30 DMA']}</td>
+                    <td class="mono">${item['50 DMA']}</td>
+                    <td class="mono">${item['200 DMA']}</td>
+                    <td class="mono" style="color: var(--accent-green); font-weight: 600;">+${item['200 DMA Dist %']}%</td>
+                    <td><span class="badge badge-breakout">${item['CAR Status']}</span></td>
+                    <td><span style="color: var(--accent-green); font-weight: 500;">${item.Action}</span></td>
+                    <td>
+                        <button class="btn btn-blue" style="padding: 4px 10px; font-size: 12px;" onclick="viewChart('${item.Ticker}', '${item.Stock}')">
+                            📊 Chart
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toUpperCase();
+            const ex = document.getElementById('exchangeFilter').value;
+
+            const filtered = breakoutData.filter(item => {
+                const matchesSearch = item.Stock.toUpperCase().includes(search) || item.Ticker.toUpperCase().includes(search);
+                const matchesEx = (ex === 'ALL') || (item.Exchange === ex);
+                return matchesSearch && matchesEx;
+            });
+
+            renderTable(filtered);
+        }
+
+        async function viewChart(ticker, stockName) {
+            document.getElementById('modalStockTitle').innerText = `${stockName} (${ticker})`;
+            document.getElementById('chartModal').style.display = 'flex';
+
+            try {
+                const res = await fetch(`/api/chart/${ticker}`);
+                const data = await res.json();
+
+                if (!data.success) {
+                    alert("Could not load chart data for " + ticker);
+                    return;
+                }
+
+                const ctx = document.getElementById('stockChart').getContext('2d');
+                if (myChart) {
+                    myChart.destroy();
+                }
+
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [
+                            { label: 'Close Price', data: data.close, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0 },
+                            { label: '30 DMA', data: data.dma_30, borderColor: '#f59e0b', borderWidth: 1.5, pointRadius: 0 },
+                            { label: '50 DMA', data: data.dma_50, borderColor: '#ec4899', borderWidth: 1.5, pointRadius: 0 },
+                            { label: '200 DMA', data: data.dma_200, borderColor: '#10b981', borderWidth: 2, pointRadius: 0 },
+                            { label: 'CAR Trendline', data: data.car, borderColor: '#a855f7', borderWidth: 2, borderDash: [4, 4], pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#f1f5f9' } }
+                        }
+                    }
+                });
+            } catch (err) {
+                alert("Error rendering chart: " + err.message);
+            }
+        }
+
+        function closeChartModal() {
+            document.getElementById('chartModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

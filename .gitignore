@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment Variables
+.env
+
+# Generated Output Files
+*.xlsx
+*.csv
+
+# OS files
+.DS_Store
+Thumbs.db
