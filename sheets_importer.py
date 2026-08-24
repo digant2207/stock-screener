@@ -1,7 +1,25 @@
 import re
 import pandas as pd
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 import io
+
+def get_robust_session():
+    """
+    Creates a requests Session with automatic retries for transient network glitches.
+    """
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        raise_on_status=False
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
 def parse_spreadsheet_id_and_gid(url):
     """
@@ -10,12 +28,10 @@ def parse_spreadsheet_id_and_gid(url):
     spreadsheet_id = None
     gid = "0"
     
-    # Check published web URL format: /d/e/2PACX-.../pub
     pub_match = re.search(r'/d/e/([a-zA-Z0-9-_]+)', url)
     if pub_match:
         return f"e/{pub_match.group(1)}", gid
         
-    # Standard format: /d/SPREADSHEET_ID
     match = re.search(r'/d/([a-zA-Z0-9-_]+)', url)
     if match:
         spreadsheet_id = match.group(1)
@@ -35,7 +51,7 @@ def format_ticker_symbol(raw_ticker):
     """
     ticker = str(raw_ticker).strip().upper()
     
-    if not ticker or ticker in ['TICKER', 'SYMBOL', 'STOCKS', 'STOCK', 'CODE', 'COMPANY', 'NSE CODE', 'BSE CODE', 'NAME', 'SR NO', 'S.NO', 'NAN', 'NONE']:
+    if not ticker or ticker in ['TICKER', 'SYMBOL', 'STOCKS', 'STOCK', 'CODE', 'COMPANY', 'NSE CODE', 'BSE CODE', 'NAME', 'SR NO', 'S.NO', 'NAN', 'NONE', 'NULL']:
         return None
         
     if ticker.endswith('.0') and ticker[:-2].isdigit():
@@ -58,16 +74,17 @@ def format_ticker_symbol(raw_ticker):
 def fetch_tickers_from_google_sheet(sheet_url, col_identifier="A"):
     """
     Downloads CSV from Google Sheet URL and extracts formatted stock tickers from the specified column.
+    Uses automatic retries and multiple export endpoints for maximum reliability.
     """
     spreadsheet_id, gid = parse_spreadsheet_id_and_gid(sheet_url)
     if not spreadsheet_id:
         raise ValueError("Invalid Google Sheet URL. Could not find Spreadsheet ID.")
         
+    session = get_robust_session()
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
     
-    # Try multiple Google Sheet CSV export endpoints
     export_urls = [
         f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid={gid}",
         f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&gid={gid}",
@@ -77,7 +94,7 @@ def fetch_tickers_from_google_sheet(sheet_url, col_identifier="A"):
     response = None
     for url in export_urls:
         try:
-            r = requests.get(url, headers=headers, timeout=12)
+            r = session.get(url, headers=headers, timeout=15)
             if r.status_code == 200 and len(r.text.strip()) > 0:
                 response = r
                 break
@@ -86,8 +103,7 @@ def fetch_tickers_from_google_sheet(sheet_url, col_identifier="A"):
             
     if not response or response.status_code != 200:
         raise ValueError(
-            "Failed to access Google Sheet (Access Restricted). "
-            "Please open your Google Sheet -> Click 'Share' button -> Change General Access to 'Anyone with the link'."
+            "Failed to access Google Sheet. Ensure General Access is set to 'Anyone with the link'."
         )
         
     df = pd.read_csv(io.StringIO(response.text), header=None)

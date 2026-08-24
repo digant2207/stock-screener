@@ -1,5 +1,6 @@
 import os
 import smtplib
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -9,6 +10,7 @@ import pandas as pd
 def send_breakout_email(df, excel_path="Final_Breakout_List.xlsx", recipient_email=None, gmail_user=None, gmail_app_password=None):
     """
     Sends Positive Breakout Report to Gmail with HTML summary table and Excel attachment.
+    Includes retry logic for resilient delivery.
     """
     gmail_user = gmail_user or os.environ.get('GMAIL_USER')
     gmail_app_password = gmail_app_password or os.environ.get('GMAIL_APP_PASSWORD')
@@ -27,10 +29,8 @@ def send_breakout_email(df, excel_path="Final_Breakout_List.xlsx", recipient_ema
     
     msg['Subject'] = f"📈 [{date_str}] Daily Stock Screener: {count} Positive Breakouts Found"
     
-    # Construct HTML body
     table_html = ""
     if df is not None and not df.empty:
-        # Convert df to HTML
         table_html = df.to_html(index=False, classes='breakout-table', border=0)
     else:
         table_html = "<p style='color: #64748b; font-style: italic;'>No stocks passed all breakout criteria today.</p>"
@@ -71,7 +71,6 @@ def send_breakout_email(df, excel_path="Final_Breakout_List.xlsx", recipient_ema
     
     msg.attach(MIMEText(html_content, 'html'))
     
-    # Attach Excel file if present
     if os.path.exists(excel_path):
         with open(excel_path, 'rb') as f:
             part = MIMEBase('application', 'octet-stream')
@@ -80,14 +79,22 @@ def send_breakout_email(df, excel_path="Final_Breakout_List.xlsx", recipient_ema
             part.add_header('Content-Disposition', f'attachment; filename="{os.path.basename(excel_path)}"')
             msg.attach(part)
             
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(gmail_user, gmail_app_password)
-        server.sendmail(gmail_user, recipient_email, msg.as_string())
-        server.quit()
-        print(f"✅ Email successfully sent to {recipient_email}!")
-        return True
-    except Exception as e:
-        print(f"❌ Failed to send email: {e}")
-        return False
+    # Retry loop for SMTP email dispatch (up to 3 attempts)
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"📧 Sending email (Attempt {attempt}/{max_retries})...")
+            server = smtplib.SMTP('smtp.gmail.com', 587, timeout=20)
+            server.starttls()
+            server.login(gmail_user, gmail_app_password)
+            server.sendmail(gmail_user, recipient_email, msg.as_string())
+            server.quit()
+            print(f"✅ Email successfully sent to {recipient_email}!")
+            return True
+        except Exception as e:
+            print(f"⚠️ SMTP Attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                time.sleep(3)
+            else:
+                print(f"❌ Failed to send email after {max_retries} attempts.")
+                return False
